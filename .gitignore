@@ -1,0 +1,10 @@
+/target
+/.zeroclaw-ref
+**/*.rs.bk
+*.pdb
+
+# Never commit a keypair, including the attestation issuer.
+*.json.key
+id.json
+issuer*.json
+.env
