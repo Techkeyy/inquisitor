@@ -94,14 +94,12 @@ inquisitor-publish address <skill>                  # derive an address offline
 1. **Video not shot.** Operator action.
 2. **Not posted** to `#solana-bounty`. Operator action.
 3. **No build-in-public posts.** This is the stated tiebreak and it is forgone.
-4. **17 of 18 real skills published**, not 18 — the issuer ran out of fee
-   lamports on the last one (~0.005 SOL fixes it).
-5. **Only the `cli` channel.** The brief's exemplar uses WhatsApp. For a tool
+4. **Only the `cli` channel.** The brief's exemplar uses WhatsApp. For a tool
    operators use while installing skills, the terminal is arguably the honest
    home, but a messaging channel would demo more vividly and is not wired up.
-6. **Days of usage history, not months.** No amount of building fixes this —
+5. **Days of usage history, not months.** No amount of building fixes this —
    only calendar time. The cron SOP accrues real logs daily from now.
-7. **No issuer reputation weighting or multi-issuer consensus.** Today a reader
+6. **No issuer reputation weighting or multi-issuer consensus.** Today a reader
    trusts one pubkey or does not.
 
 ## Video shot list — 3 minutes

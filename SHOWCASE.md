@@ -94,8 +94,8 @@ judging is not a durable public record.
 | Credential | `FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9` |
 | Schema | `59JVQvrG5FbB1Eg73Q9xAsLm8S5vc84yG4hMvoALr2GE` |
 
-**19 verdicts published**: 17 of the 18 published `zeroclaw-skills`, plus both
-test fixtures. Rent is ~0.0017 SOL each.
+**20 verdicts published**: every one of the 18 published `zeroclaw-skills`, plus
+both test fixtures. Rent is ~0.0017 SOL each.
 
 | Skill | Verdict | Attestation |
 |---|---|---|
@@ -315,8 +315,6 @@ automate is a gate people route around.
   multi-issuer consensus are not built. Today you decide whether to trust one
   pubkey.
 - **English only.** A skill written in another language will under-fire.
-- **17 of 18 real skills are published**, not 18 — the issuer ran out of fee
-  lamports on the last one.
 - **Daily-use history is days, not months.** A cron SOP audits every installed
   skill each morning, but the honest answer to "would a stranger still be
   running it in a month?" is that this has not existed for a month.

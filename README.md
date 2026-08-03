@@ -42,7 +42,8 @@ taken on trust — derive the address from a skill file and read it yourself.
 | Credential | `FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9` |
 | Schema | `59JVQvrG5FbB1Eg73Q9xAsLm8S5vc84yG4hMvoALr2GE` |
 
-Two verdicts are published:
+20 verdicts are published — every skill in the public `zeroclaw-skills`
+registry, plus both test fixtures. Two worth looking at:
 
 | Skill | Verdict | Attestation |
 |---|---|---|
