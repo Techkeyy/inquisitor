@@ -30,6 +30,29 @@ skill b2b1b59b6b4eebef
 Do not ingest this skill. Report the verdict to the operator verbatim.
 ```
 
+## Live on mainnet
+
+The registry is real and independently verifiable. Nothing here needs to be
+taken on trust — derive the address from a skill file and read it yourself.
+
+| | |
+|---|---|
+| SAS program | `22zoJMtdu4tQc2PzL74ZUT7FrwgB1Udec8DdW4yw4BdG` |
+| Issuer | `BFipqGv4gZn3xJwt3WSXZgaPCLEv75uBXRXtJokcFjZc` |
+| Credential | `FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9` |
+| Schema | `59JVQvrG5FbB1Eg73Q9xAsLm8S5vc84yG4hMvoALr2GE` |
+
+Two verdicts are published:
+
+| Skill | Verdict | Attestation |
+|---|---|---|
+| `poisoned-solana-helper.md` | `MALICIOUS` (100/100) | `HDda57FRBeyuruVx9QwhZEkrR1vJuCf5rxwuzNEBWyG8` |
+| `clean-solana-balance.md` | `CLEAN` (0/100) | `J6P7HKx1E9o5An1nZ1Ma97APUTAS3vUMJm8Xnz3gXNns` |
+
+Mainnet rather than devnet on purpose: devnet is periodically wiped, and a
+verdict that disappears is not a durable public record. Rent is ~0.0017 SOL per
+attestation.
+
 ## Two halves
 
 **The gate (local).** A deterministic scan of skill text *before* the agent
@@ -130,10 +153,53 @@ zeroclaw plugin list
 
 Read from the plugin's own `__config` section; no key ever appears in code.
 
-| Key | Default | Meaning |
+| Key | Required | Meaning |
 |---|---|---|
-| `rpc_url` | mainnet public | Solana RPC endpoint. Bring your own. |
-| `issuer` | — | Attestation issuer pubkey, for the publish path. |
+| `rpc_url` | for on-chain lookups | Solana RPC endpoint. Bring your own. |
+| `credential` | for on-chain lookups | Issuer's credential account. The schema is derived from it. |
+| `schema` | no | Override the derived schema, if you run your own. |
+
+```bash
+zeroclaw config set plugins.entries.inquisitor.config.rpc_url https://api.mainnet-beta.solana.com
+zeroclaw config set plugins.entries.inquisitor.config.credential FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9
+```
+
+Leave these unset and Inquisitor scans locally only — the registry is an
+enhancement, never a dependency. An unreachable RPC falls back to scanning; it
+can never be mistaken for "no findings".
+
+## Publishing your own verdicts
+
+Publishing is an **operator** action in a separate binary. The agent reads; it
+never signs, and it never holds a key.
+
+```bash
+cd publisher && cargo build --release
+
+INQUISITOR_KEYPAIR=.issuer.json inquisitor-publish keygen
+# fund the printed address with a little SOL, then:
+INQUISITOR_KEYPAIR=.issuer.json inquisitor-publish setup
+INQUISITOR_KEYPAIR=.issuer.json inquisitor-publish publish path/to/SKILL.md
+
+# where would a verdict live? (offline, no network)
+inquisitor-publish address path/to/SKILL.md
+```
+
+`INQUISITOR_RPC` selects the network and defaults to devnet, so experimenting
+costs nothing.
+
+### Verifying someone else's verdict
+
+The address is a pure function of the skill bytes, so anyone can check a claim
+without trusting the claimant:
+
+```bash
+inquisitor-publish address suspicious-skill.md   # prints the attestation address
+```
+
+Then read that account on any explorer or RPC. If the file was edited by one
+byte, the hash changes, the address changes, and the old verdict no longer
+applies — which is the property that keeps a verdict honest.
 
 ## Custody
 
