@@ -16,3 +16,4 @@ token.txt
 auth.json
 credentials.json
 *.pem
+.issuer.json

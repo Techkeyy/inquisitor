@@ -12,4 +12,4 @@ capabilities = ["tool"]
 #
 # `http_client` is added at the SAS step, not before — it is all-or-nothing and
 # the sandbox does not bound where a granted plugin sends data.
-permissions = ["config_read"]
+permissions = ["config_read", "http_client"]

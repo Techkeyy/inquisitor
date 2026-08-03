@@ -10,8 +10,10 @@
 //! to be wrong.
 
 pub mod flat;
+pub mod onchain;
 pub mod report;
 pub mod rules;
+pub mod sas;
 pub mod scan;
 pub mod verdict;
 
@@ -35,7 +37,7 @@ mod component {
         LogLevel, PluginAction, PluginEvent, PluginOutcome, log_record,
     };
 
-    use crate::{report, scan};
+    use crate::{onchain, report, sas, scan};
 
     struct InquisitorPlugin;
 
@@ -101,8 +103,27 @@ mod component {
                 }
             };
 
-            let _ = &parsed.config; // reserved: RPC + issuer land here on the SAS path
+            // Check the public record before doing the work. If another
+            // operator has already scanned these exact bytes and published,
+            // this is one getAccountInfo instead of a scan — and it carries an
+            // issuer identity a local scan never could.
+            //
+            // Falls through to local scanning whenever the registry is
+            // unconfigured, unreachable, or has nothing. An RPC failure must
+            // never be mistaken for "no findings".
             let verdict = scan::scan_skill(&parsed.content);
+
+            if let Some(registry) = onchain::Registry::from_section(&parsed.config)
+                && let Some(nonce) = sas::hash_to_nonce(&verdict.skill_hash)
+                && let Some(published) = onchain::lookup(&registry, &nonce)
+            {
+                return Ok(ToolResult {
+                    success: true,
+                    output: report::render_published(&published),
+                    error: None,
+                });
+            }
+
             let output = report::render(&verdict);
 
             log_record(
