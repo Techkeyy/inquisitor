@@ -8,3 +8,11 @@
 id.json
 issuer*.json
 .env
+
+# Nor a provider token. This repo gets published; the bounty requires
+# secrets redacted, and a leaked token here is a real compromise.
+*.token
+token.txt
+auth.json
+credentials.json
+*.pem
