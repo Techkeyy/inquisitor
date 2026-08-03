@@ -32,7 +32,11 @@ pub fn render_published(published: &crate::onchain::PublishedVerdict) -> String 
 
     if let Some(signer) = published.signer {
         let s = signer.to_string();
-        let short = if s.len() > 12 { format!("{}…{}", &s[..6], &s[s.len() - 4..]) } else { s };
+        let short = if s.len() > 12 {
+            format!("{}…{}", &s[..6], &s[s.len() - 4..])
+        } else {
+            s
+        };
         out.push_str(&format!("issuer  {short}\n"));
     }
     out.push_str(&format!("account {}\n", published.address));

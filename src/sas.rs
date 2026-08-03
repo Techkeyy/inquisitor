@@ -22,6 +22,13 @@ pub const SAS_PROGRAM_ID: Pubkey =
 pub const CREDENTIAL_SEED: &[u8] = b"credential";
 pub const SCHEMA_SEED: &[u8] = b"schema";
 pub const ATTESTATION_SEED: &[u8] = b"attestation";
+pub const EVENT_AUTHORITY_SEED: &[u8] = b"__event_authority";
+
+/// `["__event_authority"]` — required by the close path, which emits an event
+/// via self-CPI.
+pub fn derive_event_authority() -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[EVENT_AUTHORITY_SEED], &SAS_PROGRAM_ID)
+}
 
 /// Schema name Inquisitor publishes verdicts under.
 pub const SCHEMA_NAME: &[u8] = b"inquisitor-verdict-v1";
@@ -127,7 +134,12 @@ impl VerdictPayload {
         cur += 1;
         let scanner_version = take_str(bytes, &mut cur)?;
         let rule_ids = take_str(bytes, &mut cur)?;
-        Some(Self { level, score, scanner_version, rule_ids })
+        Some(Self {
+            level,
+            score,
+            scanner_version,
+            rule_ids,
+        })
     }
 }
 

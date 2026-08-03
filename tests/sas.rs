@@ -4,9 +4,7 @@
 //! green run here is evidence about the wasm build too — which is the reason
 //! the pure/glue split exists.
 
-use inquisitor::sas::{
-    self, SAS_PROGRAM_ID, SCHEMA_NAME, SCHEMA_VERSION, VerdictPayload,
-};
+use inquisitor::sas::{self, SAS_PROGRAM_ID, SCHEMA_NAME, SCHEMA_VERSION, VerdictPayload};
 use inquisitor::scan::skill_hash;
 use solana_pubkey::Pubkey;
 

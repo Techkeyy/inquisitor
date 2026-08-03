@@ -75,7 +75,10 @@ fn main() -> ExitCode {
             "blocked": records.iter().filter(|r| r["blocked"] == true).count(),
             "results": records,
         });
-        println!("{}", serde_json::to_string_pretty(&summary).unwrap_or_default());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&summary).unwrap_or_default()
+        );
     }
 
     if blocked {

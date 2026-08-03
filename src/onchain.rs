@@ -34,7 +34,11 @@ impl Registry {
             // Derivable from the credential, so operators need only set one key.
             None => sas::derive_schema(&credential, sas::SCHEMA_NAME, sas::SCHEMA_VERSION).0,
         };
-        Some(Self { rpc_url, credential, schema })
+        Some(Self {
+            rpc_url,
+            credential,
+            schema,
+        })
     }
 
     /// Address a verdict for `skill_hash` would occupy.

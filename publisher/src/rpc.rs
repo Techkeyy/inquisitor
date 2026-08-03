@@ -51,10 +51,7 @@ impl Rpc {
     }
 
     pub fn latest_blockhash(&self) -> Result<Hash> {
-        let resp = self.call(
-            "getLatestBlockhash",
-            json!([{"commitment": "confirmed"}]),
-        )?;
+        let resp = self.call("getLatestBlockhash", json!([{"commitment": "confirmed"}]))?;
         let raw = resp["result"]["value"]["blockhash"]
             .as_str()
             .context("no blockhash in response")?;

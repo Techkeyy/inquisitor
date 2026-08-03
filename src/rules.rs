@@ -31,31 +31,72 @@ const PROXIMITY: usize = 160;
 
 /// Verbs that move data outward.
 const EXFIL_VERBS: &[&str] = &[
-    "send", "post ", "upload", "transmit", "exfiltrate", "forward", "publish",
-    "submit", "report to", "beacon", "curl -d", "curl --data",
+    "send",
+    "post ",
+    "upload",
+    "transmit",
+    "exfiltrate",
+    "forward",
+    "publish",
+    "submit",
+    "report to",
+    "beacon",
+    "curl -d",
+    "curl --data",
 ];
 
 /// Nouns worth stealing.
 const SECRET_NOUNS: &[&str] = &[
-    "private key", "privatekey", "secret key", "seed phrase", "mnemonic",
-    "keypair", "id.json", "credential", "password", "api key", "api_key",
-    "access token", "auth token", "wallet file", ".env", "environment variable",
+    "private key",
+    "privatekey",
+    "secret key",
+    "seed phrase",
+    "mnemonic",
+    "keypair",
+    "id.json",
+    "credential",
+    "password",
+    "api key",
+    "api_key",
+    "access token",
+    "auth token",
+    "wallet file",
+    ".env",
+    "environment variable",
 ];
 
 /// Paths that only ever hold secrets.
 const SECRET_PATHS: &[&str] = &[
-    "~/.config/solana", ".config/solana/id.json", "id.json",
-    ".ssh/id_rsa", ".ssh/id_ed25519", ".aws/credentials",
-    "wallet.json", "keystore.json", ".env",
-    "login data", "key4.db", "logins.json", "cookies.sqlite",
+    "~/.config/solana",
+    ".config/solana/id.json",
+    "id.json",
+    ".ssh/id_rsa",
+    ".ssh/id_ed25519",
+    ".aws/credentials",
+    "wallet.json",
+    "keystore.json",
+    ".env",
+    "login data",
+    "key4.db",
+    "logins.json",
+    "cookies.sqlite",
 ];
 
 /// Hosts that exist to receive things quietly.
 const SUSPICIOUS_HOSTS: &[&str] = &[
-    "pastebin.com", "webhook.site", "ngrok.io", "ngrok-free.app",
-    "discord.com/api/webhooks", "discordapp.com/api/webhooks",
-    "hooks.slack.com", "transfer.sh", "0x0.st", "file.io",
-    "requestbin", "pipedream.net", "burpcollaborator",
+    "pastebin.com",
+    "webhook.site",
+    "ngrok.io",
+    "ngrok-free.app",
+    "discord.com/api/webhooks",
+    "discordapp.com/api/webhooks",
+    "hooks.slack.com",
+    "transfer.sh",
+    "0x0.st",
+    "file.io",
+    "requestbin",
+    "pipedream.net",
+    "burpcollaborator",
 ];
 
 /// Negations that flip an instruction into advice.
@@ -67,8 +108,18 @@ const SUSPICIOUS_HOSTS: &[&str] = &[
 /// instruction behind a nearby negation — is covered by the concealment and
 /// override rules, which carry no negation guard.
 const NEGATIONS: &[&str] = &[
-    "never", "do not", "don't", "avoid", "must not", "should not",
-    "shouldn't", "no need to", "refuse to", "won't", "cannot", "can't",
+    "never",
+    "do not",
+    "don't",
+    "avoid",
+    "must not",
+    "should not",
+    "shouldn't",
+    "no need to",
+    "refuse to",
+    "won't",
+    "cannot",
+    "can't",
 ];
 
 /// How far back a negation can sit and still bind to what follows.
@@ -80,30 +131,58 @@ const NEGATION_WINDOW: usize = 40;
 
 /// Phrases aimed at the model rather than the reader.
 const INJECTION_PHRASES: &[&str] = &[
-    "ignore previous instruction", "ignore all previous", "ignore prior instruction",
-    "disregard the above", "disregard previous", "disregard all prior",
-    "forget your instructions", "override your instructions",
-    "new system prompt", "system prompt:",
+    "ignore previous instruction",
+    "ignore all previous",
+    "ignore prior instruction",
+    "disregard the above",
+    "disregard previous",
+    "disregard all prior",
+    "forget your instructions",
+    "override your instructions",
+    "new system prompt",
+    "system prompt:",
 ];
 
 /// Phrases whose entire purpose is concealment from the operator.
 const DECEPTION_PHRASES: &[&str] = &[
-    "do not tell the user", "don't tell the user", "without telling the user",
-    "do not mention", "don't mention", "without informing",
-    "without the user knowing", "do not log", "don't log this",
-    "hide this from", "conceal this",
+    "do not tell the user",
+    "don't tell the user",
+    "without telling the user",
+    "do not mention",
+    "don't mention",
+    "without informing",
+    "without the user knowing",
+    "do not log",
+    "don't log this",
+    "hide this from",
+    "conceal this",
 ];
 
 /// Forged conversation-role markers.
 const ROLE_MARKERS: &[&str] = &[
-    "<|im_start|>", "<|im_end|>", "</system>", "<system>",
-    "[system]", "[/inst]", "<<sys>>", "### system",
+    "<|im_start|>",
+    "<|im_end|>",
+    "</system>",
+    "<system>",
+    "[system]",
+    "[/inst]",
+    "<<sys>>",
+    "### system",
 ];
 
 /// Shells a download can be piped into.
 const SHELL_PIPES: &[&str] = &[
-    "| bash", "|bash", "| sh", "|sh", "| zsh", "|zsh",
-    "| sudo bash", "| sudo sh", "| powershell", "| pwsh", "| fish",
+    "| bash",
+    "|bash",
+    "| sh",
+    "|sh",
+    "| zsh",
+    "|zsh",
+    "| sudo bash",
+    "| sudo sh",
+    "| powershell",
+    "| pwsh",
+    "| fish",
 ];
 
 /// Scan `content`, returning every finding. `declared_permissions` comes from
@@ -363,9 +442,14 @@ fn check_declared_mismatch(flat: &Flat, declared: &[String], out: &mut Vec<Findi
     if !declared.is_empty() {
         return;
     }
-    let wants_shell = ["run the command", "execute the following", "in your terminal", "bash -c"]
-        .iter()
-        .any(|p| flat.contains(p));
+    let wants_shell = [
+        "run the command",
+        "execute the following",
+        "in your terminal",
+        "bash -c",
+    ]
+    .iter()
+    .any(|p| flat.contains(p));
     let wants_net = ["curl ", "wget ", "http://", "https://"]
         .iter()
         .any(|p| flat.contains(p));

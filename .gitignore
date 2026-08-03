@@ -19,3 +19,4 @@ credentials.json
 .issuer.json
 .sas-ref
 .skills-ref
+dist/

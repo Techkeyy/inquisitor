@@ -36,19 +36,37 @@ fn base64_encode(bytes: &[u8]) -> String {
     const T: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::new();
     for chunk in bytes.chunks(3) {
-        let b = [chunk[0], *chunk.get(1).unwrap_or(&0), *chunk.get(2).unwrap_or(&0)];
+        let b = [
+            chunk[0],
+            *chunk.get(1).unwrap_or(&0),
+            *chunk.get(2).unwrap_or(&0),
+        ];
         let n = ((b[0] as u32) << 16) | ((b[1] as u32) << 8) | b[2] as u32;
         out.push(T[(n >> 18) as usize & 63] as char);
         out.push(T[(n >> 12) as usize & 63] as char);
-        out.push(if chunk.len() > 1 { T[(n >> 6) as usize & 63] as char } else { '=' });
-        out.push(if chunk.len() > 2 { T[n as usize & 63] as char } else { '=' });
+        out.push(if chunk.len() > 1 {
+            T[(n >> 6) as usize & 63] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            T[n as usize & 63] as char
+        } else {
+            '='
+        });
     }
     out
 }
 
 #[test]
 fn base64_round_trips() {
-    for case in [b"".to_vec(), b"a".to_vec(), b"ab".to_vec(), b"abc".to_vec(), (0..=255u8).collect()] {
+    for case in [
+        b"".to_vec(),
+        b"a".to_vec(),
+        b"ab".to_vec(),
+        b"abc".to_vec(),
+        (0..=255u8).collect(),
+    ] {
         assert_eq!(base64_decode(&base64_encode(&case)), Some(case));
     }
 }
@@ -108,7 +126,12 @@ fn truncated_account_is_rejected() {
 
 #[test]
 fn garbage_response_is_rejected() {
-    for body in ["", "{}", "not json at all", r#"{"result":{"value":{"data":["!!!!","base64"]}}}"#] {
+    for body in [
+        "",
+        "{}",
+        "not json at all",
+        r#"{"result":{"value":{"data":["!!!!","base64"]}}}"#,
+    ] {
         assert!(
             onchain::verdict_from_response(body, credential()).is_none(),
             "accepted garbage: {body}"
@@ -122,14 +145,23 @@ fn registry_needs_explicit_configuration() {
     assert!(Registry::from_section(&HashMap::new()).is_none());
 
     let mut partial = HashMap::new();
-    partial.insert("rpc_url".to_string(), "https://api.devnet.solana.com".to_string());
-    assert!(Registry::from_section(&partial).is_none(), "rpc alone is not a registry");
+    partial.insert(
+        "rpc_url".to_string(),
+        "https://api.devnet.solana.com".to_string(),
+    );
+    assert!(
+        Registry::from_section(&partial).is_none(),
+        "rpc alone is not a registry"
+    );
 }
 
 #[test]
 fn registry_derives_schema_when_omitted() {
     let mut section = HashMap::new();
-    section.insert("rpc_url".to_string(), "https://api.devnet.solana.com".to_string());
+    section.insert(
+        "rpc_url".to_string(),
+        "https://api.devnet.solana.com".to_string(),
+    );
     section.insert("credential".to_string(), credential().to_string());
 
     let registry = Registry::from_section(&section).expect("registry");

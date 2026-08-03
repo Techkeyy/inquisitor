@@ -153,7 +153,11 @@ mod component {
             // A blocking verdict is a successful scan, not a failed call: the
             // tool did exactly its job. `success` reports tool health, and the
             // decision lives in the output the model reads.
-            Ok(ToolResult { success: true, output, error: None })
+            Ok(ToolResult {
+                success: true,
+                output,
+                error: None,
+            })
         }
     }
 

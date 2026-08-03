@@ -17,7 +17,7 @@ use anyhow::{Context, Result, bail};
 use inquisitor::sas::{SCHEMA_NAME, SCHEMA_VERSION, VerdictPayload};
 use inquisitor::{sas, scan};
 use solana_attestation_service_client::instructions::{
-    CreateAttestationBuilder, CreateCredentialBuilder, CreateSchemaBuilder,
+    CloseAttestationBuilder, CreateAttestationBuilder, CreateCredentialBuilder, CreateSchemaBuilder,
 };
 use solana_keypair::Keypair;
 use solana_program::instruction::Instruction;
@@ -29,8 +29,7 @@ use crate::rpc::Rpc;
 
 /// System program address. Hard-coded rather than pulled from a crate: it is a
 /// constant of the network and this avoids another dependency.
-const SYSTEM_PROGRAM: Pubkey =
-    solana_program::pubkey!("11111111111111111111111111111111");
+const SYSTEM_PROGRAM: Pubkey = solana_program::pubkey!("11111111111111111111111111111111");
 
 /// Credential name. Together with the issuer pubkey this defines the namespace
 /// a verdict lives in, so two issuers never collide.
@@ -58,6 +57,10 @@ fn main() -> Result<()> {
         "address" => {
             let path = args.get(1).context("usage: address <skill file>")?;
             address(path)
+        }
+        "revoke" => {
+            let path = args.get(1).context("usage: revoke <skill file>")?;
+            revoke(&rpc_url, path)
         }
         _ => {
             eprintln!(
@@ -94,8 +97,7 @@ fn issuer() -> Result<Keypair> {
     if bytes.len() != 64 {
         bail!("{path} holds {} bytes, expected 64", bytes.len());
     }
-    Keypair::try_from(&bytes[..])
-        .map_err(|e| anyhow::anyhow!("malformed keypair in {path}: {e}"))
+    Keypair::try_from(&bytes[..]).map_err(|e| anyhow::anyhow!("malformed keypair in {path}: {e}"))
 }
 
 fn client(rpc_url: &str) -> Rpc {
@@ -109,8 +111,7 @@ fn client(rpc_url: &str) -> Rpc {
 /// for publishing verdicts from an agent host is that a compromise costs you
 /// reputation rather than money.
 fn keygen() -> Result<()> {
-    let path = std::env::var("INQUISITOR_KEYPAIR")
-        .unwrap_or_else(|_| ".issuer.json".to_string());
+    let path = std::env::var("INQUISITOR_KEYPAIR").unwrap_or_else(|_| ".issuer.json".to_string());
 
     if std::path::Path::new(&path).exists() {
         bail!("{path} already exists — refusing to overwrite an issuer key");
@@ -132,10 +133,8 @@ fn setup(rpc_url: &str) -> Result<()> {
     let issuer = issuer()?;
     let rpc = client(rpc_url);
 
-    let (credential, _) = sas::derive_credential(
-        &to_inq(&issuer.pubkey()),
-        CREDENTIAL_NAME.as_bytes(),
-    );
+    let (credential, _) =
+        sas::derive_credential(&to_inq(&issuer.pubkey()), CREDENTIAL_NAME.as_bytes());
     let (schema, _) = sas::derive_schema(&credential, SCHEMA_NAME, SCHEMA_VERSION);
 
     let credential = to_sdk(&credential);
@@ -197,8 +196,7 @@ fn setup(rpc_url: &str) -> Result<()> {
 }
 
 fn publish(rpc_url: &str, path: &str) -> Result<()> {
-    let content = std::fs::read_to_string(path)
-        .with_context(|| format!("cannot read {path}"))?;
+    let content = std::fs::read_to_string(path).with_context(|| format!("cannot read {path}"))?;
     let verdict = scan::scan_skill(&content);
 
     let issuer = issuer()?;
@@ -207,12 +205,15 @@ fn publish(rpc_url: &str, path: &str) -> Result<()> {
     let (credential, _) =
         sas::derive_credential(&to_inq(&issuer.pubkey()), CREDENTIAL_NAME.as_bytes());
     let (schema, _) = sas::derive_schema(&credential, SCHEMA_NAME, SCHEMA_VERSION);
-    let nonce = sas::hash_to_nonce(&verdict.skill_hash)
-        .context("scanner produced a malformed hash")?;
+    let nonce =
+        sas::hash_to_nonce(&verdict.skill_hash).context("scanner produced a malformed hash")?;
     let (attestation, _) = sas::derive_attestation(&credential, &schema, &nonce);
 
     println!("skill      {}", verdict.skill_hash);
-    println!("verdict    {:?} (risk {}/100)", verdict.level, verdict.score);
+    println!(
+        "verdict    {:?} (risk {}/100)",
+        verdict.level, verdict.score
+    );
     println!("attestation {}", to_sdk(&attestation));
 
     if rpc.account_exists(&to_sdk(&attestation))? {
@@ -249,9 +250,55 @@ fn publish(rpc_url: &str, path: &str) -> Result<()> {
     Ok(())
 }
 
+/// Withdraw a verdict.
+///
+/// Issuers are wrong sometimes — this tool published a false positive against
+/// `auto-coder` from a stale build within an hour of going live. An attestation
+/// is immutable, so the honest correction is to close the account and publish
+/// again from a build you trust. A registry with no retraction path is one
+/// where the first mistake is permanent, and nobody should trust an issuer who
+/// cannot take something back.
+///
+/// Closing refunds the rent to the payer.
+fn revoke(rpc_url: &str, path: &str) -> Result<()> {
+    let content = std::fs::read_to_string(path).with_context(|| format!("cannot read {path}"))?;
+    let verdict = scan::scan_skill(&content);
+
+    let issuer = issuer()?;
+    let rpc = client(rpc_url);
+
+    let (credential, _) =
+        sas::derive_credential(&to_inq(&issuer.pubkey()), CREDENTIAL_NAME.as_bytes());
+    let (schema, _) = sas::derive_schema(&credential, SCHEMA_NAME, SCHEMA_VERSION);
+    let nonce = sas::hash_to_nonce(&verdict.skill_hash).context("malformed hash")?;
+    let (attestation, _) = sas::derive_attestation(&credential, &schema, &nonce);
+    let (event_authority, _) = sas::derive_event_authority();
+
+    println!("skill       {}", verdict.skill_hash);
+    println!("attestation {}", to_sdk(&attestation));
+
+    if !rpc.account_exists(&to_sdk(&attestation))? {
+        println!("\nnothing published at that address — nothing to revoke");
+        return Ok(());
+    }
+
+    let ix = CloseAttestationBuilder::new()
+        .payer(issuer.pubkey())
+        .authority(issuer.pubkey())
+        .credential(to_sdk(&credential))
+        .attestation(to_sdk(&attestation))
+        .event_authority(to_sdk(&event_authority))
+        .system_program(SYSTEM_PROGRAM)
+        .attestation_program(to_sdk(&sas::SAS_PROGRAM_ID))
+        .instruction();
+
+    let sig = send(&rpc, &issuer, vec![ix])?;
+    println!("\nrevoked: {sig}");
+    Ok(())
+}
+
 fn address(path: &str) -> Result<()> {
-    let content = std::fs::read_to_string(path)
-        .with_context(|| format!("cannot read {path}"))?;
+    let content = std::fs::read_to_string(path).with_context(|| format!("cannot read {path}"))?;
     let verdict = scan::scan_skill(&content);
     let issuer = issuer()?;
 
@@ -268,11 +315,7 @@ fn address(path: &str) -> Result<()> {
     Ok(())
 }
 
-fn send(
-    rpc: &Rpc,
-    issuer: &Keypair,
-    instructions: Vec<Instruction>,
-) -> Result<String> {
+fn send(rpc: &Rpc, issuer: &Keypair, instructions: Vec<Instruction>) -> Result<String> {
     let balance = rpc.balance(&issuer.pubkey()).unwrap_or(0);
     if balance == 0 {
         bail!(

@@ -75,12 +75,7 @@ pub fn declared_permissions(content: &str) -> Vec<String> {
         if rest.is_empty() {
             in_block = true;
         } else if let Some(inner) = rest.strip_prefix('[').and_then(|r| r.strip_suffix(']')) {
-            perms.extend(
-                inner
-                    .split(',')
-                    .map(clean_scalar)
-                    .filter(|s| !s.is_empty()),
-            );
+            perms.extend(inner.split(',').map(clean_scalar).filter(|s| !s.is_empty()));
         } else {
             perms.push(clean_scalar(rest));
         }

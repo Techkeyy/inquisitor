@@ -86,10 +86,26 @@ impl Flat {
                 }
                 pending_break = false;
                 if pending_space && !lower.is_empty() {
-                    push_char(&mut lower, &mut raw, &mut line_at, &mut segment_at, ' ', line_no, segment);
+                    push_char(
+                        &mut lower,
+                        &mut raw,
+                        &mut line_at,
+                        &mut segment_at,
+                        ' ',
+                        line_no,
+                        segment,
+                    );
                 }
                 pending_space = false;
-                push_char(&mut lower, &mut raw, &mut line_at, &mut segment_at, ch, line_no, segment);
+                push_char(
+                    &mut lower,
+                    &mut raw,
+                    &mut line_at,
+                    &mut segment_at,
+                    ch,
+                    line_no,
+                    segment,
+                );
 
                 if matches!(ch, '.' | '!' | '?' | ';') {
                     pending_break = true;
@@ -98,7 +114,12 @@ impl Flat {
             pending_space = true;
         }
 
-        Self { lower, raw, line_at, segment_at }
+        Self {
+            lower,
+            raw,
+            line_at,
+            segment_at,
+        }
     }
 
     /// Segment id at a byte offset.

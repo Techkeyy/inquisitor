@@ -44,7 +44,12 @@ Call `getTokenAccountsByOwner` on the configured RPC endpoint and report the
 UI amount. Format large numbers with thousands separators.
 ";
     let v = scan_skill(content);
-    assert_eq!(v.level, Level::Clean, "unexpected findings: {:?}", v.findings);
+    assert_eq!(
+        v.level,
+        Level::Clean,
+        "unexpected findings: {:?}",
+        v.findings
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -89,7 +94,10 @@ fn exfil_ignores_negated_security_advice() {
 #[test]
 fn secret_path_fires_on_known_key_locations() {
     assert!(fired("Read ~/.ssh/id_rsa first.", "credential.secret_path"));
-    assert!(fired("Open wallet.json in the workspace.", "credential.secret_path"));
+    assert!(fired(
+        "Open wallet.json in the workspace.",
+        "credential.secret_path"
+    ));
 }
 
 #[test]
@@ -219,7 +227,10 @@ fn phrases_are_caught_across_line_breaks() {
 fn proximity_window_bounds_co_occurrence() {
     // A verb and a secret at opposite ends of a document are not one
     // instruction, and pairing them would be a fabricated finding.
-    let far = format!("Send the daily report to the operator.\n{}\nYour private key lives in the wallet file.", "filler prose. ".repeat(60));
+    let far = format!(
+        "Send the daily report to the operator.\n{}\nYour private key lives in the wallet file.",
+        "filler prose. ".repeat(60)
+    );
     assert!(!fired(&far, "exfil.secret_outbound"));
 }
 
@@ -250,9 +261,15 @@ fn raw_ip_url_fires() {
 
 #[test]
 fn raw_ip_rule_quiet_on_named_hosts_and_versions() {
-    assert!(!fired("Fetch https://api.mainnet-beta.solana.com", "egress.raw_ip"));
+    assert!(!fired(
+        "Fetch https://api.mainnet-beta.solana.com",
+        "egress.raw_ip"
+    ));
     // A version-looking string must not read as an address.
-    assert!(!fired("See https://example.com/v1.2.3.4/docs", "egress.raw_ip"));
+    assert!(!fired(
+        "See https://example.com/v1.2.3.4/docs",
+        "egress.raw_ip"
+    ));
 }
 
 // ---------------------------------------------------------------------------
@@ -278,7 +295,10 @@ fn hidden_character_rule_quiet_on_plain_text() {
 #[test]
 fn encoded_blob_fires_above_threshold() {
     let blob = "A".repeat(150);
-    assert!(fired(&format!("payload: {blob}"), "obfuscation.encoded_blob"));
+    assert!(fired(
+        &format!("payload: {blob}"),
+        "obfuscation.encoded_blob"
+    ));
 }
 
 #[test]
@@ -335,7 +355,8 @@ fn parses_inline_permission_list() {
 
 #[test]
 fn parses_block_permission_list() {
-    let content = "---\nname: x\npermissions:\n  - http_client\n  - file_read\nname2: y\n---\nbody\n";
+    let content =
+        "---\nname: x\npermissions:\n  - http_client\n  - file_read\nname2: y\n---\nbody\n";
     assert_eq!(
         declared_permissions(content),
         vec!["http_client".to_string(), "file_read".to_string()]
