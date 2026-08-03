@@ -170,6 +170,31 @@ Verified against `zeroclaw-labs/zeroclaw` at `master`, not from documentation:
 - `wit/v0` has **no `.frozen` marker**. The ABI is experimental and can move.
 - The workspace requires **rustc ≥ 1.96.1**.
 
+### On the Solana crates in a component
+
+The brief warns that the modular crates are "compile-verified as a library, not
+yet exercised as an instantiated component." Measured results, all against
+`wasm32-wasip2` with rustc 1.97.1:
+
+- **`solana-attestation-service-client` 1.0.9 compiles clean.** No hand-encoding
+  is required for SAS. It is Codama-generated over `solana-program` 2.3.0.
+- **`default-features = false` is a trap.** It strips `Instruction`,
+  `AccountMeta`, and `Pubkey::find_program_address`. The working set is
+  `solana-pubkey/curve25519` plus `solana-instruction/std`.
+- **`wasm-bindgen` and `js-sys` land in the tree regardless**, because these
+  crates gate browser glue on `cfg(target_arch = "wasm32")` and wasip2 *is*
+  wasm32. Their presence is not fatal — everything still compiles — so a
+  dependency-tree audit alone would wrongly rule the approach out.
+- **Windows-specific:** building any of this under a temp directory failed with
+  `LNK1104` on `wasm-bindgen-shared`'s build script — an antivirus file lock on
+  freshly emitted `.exe` files, not a toolchain problem. The same build succeeds
+  outside temp. Worth knowing before spending an evening on a phantom.
+
+SAS program ID: `22zoJMtdu4tQc2PzL74ZUT7FrwgB1Udec8DdW4yw4BdG`
+(mainnet + devnet). Instructions include `create_credential`, `create_schema`,
+`create_attestation`, `close_attestation`; accounts are `credential`, `schema`,
+`attestation`.
+
 ## License
 
 MIT
