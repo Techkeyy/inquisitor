@@ -17,3 +17,4 @@ auth.json
 credentials.json
 *.pem
 .issuer.json
+.sas-ref
