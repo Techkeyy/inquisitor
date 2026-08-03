@@ -71,6 +71,13 @@ const NEGATIONS: &[&str] = &[
     "shouldn't", "no need to", "refuse to", "won't", "cannot", "can't",
 ];
 
+/// How far back a negation can sit and still bind to what follows.
+///
+/// Deliberately short. A negation two sentences away is not negating this
+/// clause, and a generous window is a laundering channel: write "never do
+/// anything harmful" at the top of a file and every rule below goes quiet.
+const NEGATION_WINDOW: usize = 40;
+
 /// Phrases aimed at the model rather than the reader.
 const INJECTION_PHRASES: &[&str] = &[
     "ignore previous instruction", "ignore all previous", "ignore prior instruction",
@@ -165,8 +172,10 @@ fn check_exfiltration(flat: &Flat, out: &mut Vec<Finding>) {
             let Some(at) = flat.near(verb, noun, PROXIMITY) else {
                 continue;
             };
-            // Advice, not instruction — see NEGATIONS.
-            if NEGATIONS.iter().any(|n| flat.near(verb, n, 60).is_some()) {
+            // Advice, not instruction — see NEGATIONS. Only a negation that
+            // precedes the verb counts, so a distant "never" elsewhere in the
+            // document cannot launder a real instruction.
+            if flat.preceded_by(at, NEGATIONS, NEGATION_WINDOW) {
                 continue;
             }
             out.push(Finding {
@@ -185,8 +194,14 @@ fn check_exfiltration(flat: &Flat, out: &mut Vec<Finding>) {
 
 fn check_secret_paths(flat: &Flat, out: &mut Vec<Finding>) {
     for path in SECRET_PATHS {
-        let hits = flat.find_all(path);
-        if let Some(&at) = hits.first() {
+        for at in flat.find_all(path) {
+            // "Never modify `.env` files" is a skill doing the right thing.
+            // Flagging it teaches operators to ignore the scanner, which costs
+            // more than the rule earns. Found by running against the real
+            // registry, where `auto-coder` tripped on exactly this sentence.
+            if flat.preceded_by(at, NEGATIONS, NEGATION_WINDOW) {
+                continue;
+            }
             out.push(Finding {
                 rule_id: "credential.secret_path",
                 severity: Severity::High,

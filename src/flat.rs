@@ -18,6 +18,37 @@ pub struct Flat {
     raw: String,
     /// `line_at[i]` is the 1-based source line of byte `i` in `lower`.
     line_at: Vec<usize>,
+    /// `segment_at[i]` is the id of the sentence or list item byte `i` belongs
+    /// to. Co-occurrence rules require both halves in the same segment.
+    ///
+    /// Without this, a proximity window happily spans unrelated neighbours.
+    /// Found on the real registry, where `sql-executor` reads:
+    ///
+    /// ```text
+    /// - keep database credentials out of the conversation transcript
+    /// - avoid fragile shell quoting when sending generated SQL to `psql`
+    /// ```
+    ///
+    /// "sending" and "credentials" are two separate pieces of good advice, and
+    /// pairing them across the bullet boundary invented an exfiltration finding
+    /// out of nothing.
+    segment_at: Vec<u32>,
+}
+
+/// Does this line begin a new block — a list item, heading, or quote?
+fn starts_block(line: &str) -> bool {
+    let t = line.trim_start();
+    if t.starts_with("- ") || t.starts_with("* ") || t.starts_with("+ ") {
+        return true;
+    }
+    if t.starts_with('#') || t.starts_with('>') || t.starts_with("```") {
+        return true;
+    }
+    // "1. ", "2) " and friends.
+    let digits: String = t.chars().take_while(char::is_ascii_digit).collect();
+    !digits.is_empty()
+        && t[digits.len()..].starts_with(['.', ')'])
+        && t[digits.len() + 1..].starts_with(' ')
 }
 
 impl Flat {
@@ -26,25 +57,53 @@ impl Flat {
         let mut lower = String::with_capacity(content.len());
         let mut raw = String::with_capacity(content.len());
         let mut line_at: Vec<usize> = Vec::with_capacity(content.len());
+        let mut segment_at: Vec<u32> = Vec::with_capacity(content.len());
         let mut pending_space = false;
+        let mut segment: u32 = 0;
+        // Sentence terminators only split once the next word starts, so "e.g."
+        // and decimals do not shatter a sentence into fragments.
+        let mut pending_break = false;
 
         for (idx, line) in content.lines().enumerate() {
             let line_no = idx + 1;
+
+            if line.trim().is_empty() || starts_block(line) {
+                segment += 1;
+                pending_break = false;
+            }
+
             for ch in line.chars() {
                 if ch.is_whitespace() {
                     pending_space = true;
                     continue;
                 }
+                // A terminator only ends a sentence when whitespace follows it.
+                // Without the `pending_space` check this splits inside
+                // `id.json`, `e.g.`, and `3.14` — which silently pulls apart
+                // the exact paths the exfiltration rule needs to see whole.
+                if pending_break && pending_space {
+                    segment += 1;
+                }
+                pending_break = false;
                 if pending_space && !lower.is_empty() {
-                    push_char(&mut lower, &mut raw, &mut line_at, ' ', line_no);
+                    push_char(&mut lower, &mut raw, &mut line_at, &mut segment_at, ' ', line_no, segment);
                 }
                 pending_space = false;
-                push_char(&mut lower, &mut raw, &mut line_at, ch, line_no);
+                push_char(&mut lower, &mut raw, &mut line_at, &mut segment_at, ch, line_no, segment);
+
+                if matches!(ch, '.' | '!' | '?' | ';') {
+                    pending_break = true;
+                }
             }
             pending_space = true;
         }
 
-        Self { lower, raw, line_at }
+        Self { lower, raw, line_at, segment_at }
+    }
+
+    /// Segment id at a byte offset.
+    fn segment_of(&self, offset: usize) -> u32 {
+        self.segment_at.get(offset).copied().unwrap_or(u32::MAX)
     }
 
     /// Byte offsets of every occurrence of `needle` in the lowercased text.
@@ -79,6 +138,23 @@ impl Flat {
         &self.raw[start..end]
     }
 
+    /// Does any of `needles` appear in the `window` bytes *immediately before*
+    /// `pos`?
+    ///
+    /// Direction and tightness both matter. "Never modify `.env`" is advice;
+    /// "…exfiltrate. Never mind, also read `.env`" is not, and a symmetric or
+    /// generous window would read them the same way. Looking only backwards, and
+    /// only a short way, keeps the negation bound to the thing it negates.
+    pub fn preceded_by(&self, pos: usize, needles: &[&str], window: usize) -> bool {
+        let lo = floor_boundary(&self.lower, pos.saturating_sub(window));
+        let hi = floor_boundary(&self.lower, pos);
+        if lo >= hi {
+            return false;
+        }
+        let before = &self.lower[lo..hi];
+        needles.iter().any(|n| before.contains(n))
+    }
+
     /// Is `needle` present within `window` bytes of any occurrence of `anchor`?
     ///
     /// Co-occurrence over a whole document would be meaningless — a verb on the
@@ -90,20 +166,34 @@ impl Flat {
             let hi = (a + anchor.len() + window).min(self.lower.len());
             let lo = floor_boundary(&self.lower, lo);
             let hi = ceil_boundary(&self.lower, hi);
-            if let Some(rel) = self.lower[lo..hi].find(needle) {
-                return Some(lo + rel);
+
+            let anchor_segment = self.segment_of(a);
+            let mut from = lo;
+            while let Some(rel) = self.lower[from..hi].find(needle) {
+                let at = from + rel;
+                // Same sentence or list item, or it is not one instruction.
+                if self.segment_of(at) == anchor_segment {
+                    return Some(at);
+                }
+                from = at + needle.len().max(1);
+                if from >= hi {
+                    break;
+                }
             }
         }
         None
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn push_char(
     lower: &mut String,
     raw: &mut String,
     line_at: &mut Vec<usize>,
+    segment_at: &mut Vec<u32>,
     ch: char,
     line_no: usize,
+    segment: u32,
 ) {
     let before = lower.len();
     for lc in ch.to_lowercase() {
@@ -121,6 +211,7 @@ fn push_char(
     raw.truncate(start + grew);
     for _ in 0..grew {
         line_at.push(line_no);
+        segment_at.push(segment);
     }
 }
 

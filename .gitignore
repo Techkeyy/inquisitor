@@ -18,3 +18,4 @@ credentials.json
 *.pem
 .issuer.json
 .sas-ref
+.skills-ref

@@ -1,0 +1,168 @@
+{
+  "blocked": 0,
+  "results": [
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/api-tester/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "db3147ddcc3096fa46db26e010f122c7c839806fd8bc09e57912c57bcc9393ed"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/auto-coder/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "8e74d1d3d20691f209704325f801679c20485fdb7f42c81f98549e23183c6ad6"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/code-reviewer/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "79dc5c9b8d579847a8544fe8e782ae17920ec1b421d884be84b79bef20dc1688"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/data-analyst/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "5f4e6aa86e8981c7ddcb7289643f3e35f49fe4caa001f40e3693aa57d7ef7ed7"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/discord-moderator/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "88da2139aa750f0dc15d3f7773df8abb19a42e355887f1306ab0a89a0af251ad"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/doc-writer/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "8d02a100156a40b2841162e581675b149160cb44b001f5c57144c7bf03127b55"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/email-responder/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "bc3b29e35f8a9179ab3660387481088cb53540eb269032ae18971a76ddaca09b"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/git-assistant/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "1489870186b27b555dc3530fb1b0a83aaa6914ef3f1b72575f97196ca48e24f7"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/inboxapi/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "655533a024dc34dd88dc3aecf6b42c7eb7cd2aeca4685f7f3ead7ffec0176144"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/knowledge-base/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "e4df894dc1ae18e346bffe3ee885f8bcf0f0e5ef50c59e25f82b86a2d3090f9f"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/multi-agent-router/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "93e8ec455a18994ed62e3af9e213bbe830a80b2e91f3082fcab8b0d5690821a1"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/self-improving-agent/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "6948d59a9deb8ff4cc4dd4aec806719b5ec8f9e618cc236dc9a0d48966dca80f"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/slack-connector/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "febb2636eb7bccbd4ebf0d3305aa46439a37182955a6bc30413679e01d768121"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/sql-executor/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "9b66a0e8b4fc20067c65ef4ed993b54cee6e53a77786fe2889add351c821bb5f"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/telegram-assistant/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "5969dc45d28c963cb5a8b21e76319423065e990ce450582e6716daf538fd69b2"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/web-researcher/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "fb6d18e7bb553411eeee3c6208f229333d7d3345716e16bcd6a7d133da610a0e"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/x-twitter-scraper/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "2c055a8998274f0e8ba52e8b558cea1c6d0f68153eb9dfc9ebbcf8166cce8d66"
+    },
+    {
+      "blocked": false,
+      "findings": [],
+      "level": "clean",
+      "path": ".skills-ref/skills/zeroclaw-simplify-review/SKILL.md",
+      "scanner_version": "0.1.0",
+      "score": 0,
+      "skill_hash": "60b7259b75be2bb14f0f49c5b802466b933c267314cc4e348a56ba2dcc0034f9"
+    }
+  ],
+  "scanned": 18
+}
