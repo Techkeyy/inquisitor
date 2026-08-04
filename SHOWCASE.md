@@ -41,7 +41,7 @@ Tuesday where you install something helpful-looking and it reads
 ## What it does
 
 **One: the gate (local).** A deterministic scan of skill text *before* the agent
-reads it. Eleven rules, no LLM in the hot path — same input, same verdict, every
+reads it. Seventeen rules, no LLM in the hot path — same input, same verdict, every
 time, at no token cost.
 
 **Two: the record (on-chain).** The verdict is published to the Solana
@@ -105,9 +105,14 @@ both test fixtures. Rent is ~0.0017 SOL each.
 Verify any of it without trusting us:
 
 ```bash
-inquisitor-publish address some-skill.md   # derive the address offline
+export INQUISITOR_CREDENTIAL=FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9
+cargo run -q --release --manifest-path publisher/Cargo.toml -- address some-skill.md
 # then read that account on any explorer
 ```
+
+No keypair and no network — the address is a pure function of the file's bytes
+and the registry being checked. Verifying someone else's verdict must not
+require holding their identity.
 
 ## What it looks like running
 
@@ -234,10 +239,10 @@ sentence *"Do not close a token account without confirmation"* — advice to
 **require** a human, read as an instruction to skip one. Security documentation
 is written almost entirely in that shape.
 
-**Built:** the scanner (16 rules, hand-rolled matchers — a security tool should
+**Built:** the scanner (17 rules, hand-rolled matchers — a security tool should
 not carry a backtracking regex engine), the flattening/segmentation layer, SAS
 address derivation, the on-chain read path, and the publisher CLI. ~2,300 lines
-of Rust, 66 tests.
+of Rust, 83 tests.
 
 **Composed:** ZeroClaw's plugin host, SAS, and the Codama-generated client.
 

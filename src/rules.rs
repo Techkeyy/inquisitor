@@ -245,6 +245,44 @@ const BLIND_SIGN_PHRASES: &[&str] = &[
     "sign this base64",
 ];
 
+/// Words that make a dotted quad a version, not an address.
+///
+/// "version 1.2.3.4" is four octets in the range 0–255 and parses as an IP
+/// perfectly well. Caught by stress testing, where a doc mentioning a toolchain
+/// version was blocked outright.
+const VERSION_CONTEXT: &[&str] = &[
+    "version",
+    "v.",
+    "semver",
+    "release",
+    "toolchain",
+    "upgrade to",
+    "requires",
+];
+
+/// Commands whose output being piped into a shell means executing something the
+/// reader cannot see.
+///
+/// A downloader is the obvious case, but not the only one: `echo <base64> |
+/// base64 -d | sh` never touches the network and executes a payload nobody
+/// reviewed. Found by stress testing — the original rule required a downloader
+/// and let decode-and-execute through completely.
+const PIPE_SOURCES: &[&str] = &[
+    "curl ",
+    "wget ",
+    "iwr ",
+    "base64 ",
+    "base64 -d",
+    "xxd ",
+    "openssl enc",
+    "python -c",
+    "python3 -c",
+    "perl -e",
+    "gunzip",
+    "zcat",
+    "echo ",
+];
+
 /// Verbs that move value on chain.
 const TRANSFER_VERBS: &[&str] = &[
     "transfer",
@@ -312,7 +350,7 @@ pub fn scan(content: &str, declared_permissions: &[String]) -> Vec<Finding> {
         "Points at a host commonly used to collect exfiltrated data.",
         &mut findings,
     );
-    check_raw_ip_url(&flat, &mut findings);
+    check_raw_ip(&flat, &mut findings);
     check_solana_authority(&flat, &mut findings);
     check_solana_delegation(&flat, &mut findings);
     check_solana_closure(&flat, &mut findings);
@@ -396,9 +434,9 @@ fn check_secret_paths(flat: &Flat, out: &mut Vec<Finding>) {
 fn check_piped_installer(flat: &Flat, out: &mut Vec<Finding>) {
     for pipe in SHELL_PIPES {
         for at in flat.find_all(pipe) {
-            let fetches = ["curl ", "wget ", "iwr "]
+            let fetches = PIPE_SOURCES
                 .iter()
-                .any(|f| flat.near(pipe, f, PROXIMITY).is_some());
+                .any(|f| flat.near_loose(pipe, f, PROXIMITY).is_some());
             if fetches {
                 out.push(Finding {
                     rule_id: "installer.pipe_to_shell",
@@ -440,7 +478,70 @@ fn check_phrases(
 
 // ---------------------------------------------------------------------------
 
-/// A bare IPv4 in a URL — legitimate skills name hosts, not addresses.
+/// A bare IPv4 anywhere — legitimate skills name hosts, not addresses.
+///
+/// Originally this only looked inside `http://`. Stress testing walked straight
+/// past it with "transmit its contents to our endpoint at 203.0.113.9": no
+/// scheme, no hostname, no finding. An address written bare is if anything a
+/// stronger signal than one in a URL.
+fn check_raw_ip(flat: &Flat, out: &mut Vec<Finding>) {
+    let raw = flat.original();
+    let bytes = raw.as_bytes();
+    let mut start: Option<usize> = None;
+
+    for i in 0..=bytes.len() {
+        let is_part = i < bytes.len() && (bytes[i].is_ascii_digit() || bytes[i] == b'.');
+        match (start, is_part) {
+            (None, true) => start = Some(i),
+            (Some(s), false) => {
+                // Sentence punctuation clings to the address: "…at 203.0.113.9."
+                // tokenises with a trailing dot, which splits into five parts and
+                // silently fails validation. Trim before judging.
+                let tok = raw[s..i].trim_end_matches('.');
+                let octets: Vec<&str> = tok.split('.').collect();
+                let valid = octets.len() == 4
+                    && octets.iter().all(|o| !o.is_empty() && o.len() <= 3)
+                    && octets.iter().all(|o| o.parse::<u8>().is_ok());
+                // A quad glued to a preceding letter is part of a larger
+                // token, not an address: `v1.2.3.4` in a URL path is a version.
+                // The tokenizer starts at the first digit, so the letter before
+                // it is the only evidence that it is not standalone.
+                let glued = s > 0 && raw.as_bytes()[s - 1].is_ascii_alphanumeric();
+
+                if valid && !glued && !flat.preceded_by(s, VERSION_CONTEXT, 24) {
+                    // A four-part version string is the one innocent shape this
+                    // matches, so it stays Medium on its own and only becomes a
+                    // blocking signal alongside something that moves data.
+                    let exfil_nearby = EXFIL_VERBS
+                        .iter()
+                        .any(|v| flat.near_loose(tok, v, PROXIMITY).is_some());
+                    out.push(Finding {
+                        rule_id: "egress.raw_ip",
+                        // A bare address alone is worth a note, not a block —
+                        // one Medium finding already crosses the blocking
+                        // threshold, which is too much weight for something with
+                        // an innocent reading. Paired with a verb that moves
+                        // data, it is a different claim.
+                        severity: if exfil_nearby {
+                            Severity::High
+                        } else {
+                            Severity::Low
+                        },
+                        line: flat.line_of(s),
+                        excerpt: excerpt(flat.window(s, EXCERPT_MAX)),
+                        explanation: "Uses a bare IP address instead of a named host.",
+                    });
+                    return;
+                }
+                start = None;
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Kept for the URL form so a scheme-prefixed address still reports cleanly.
+#[allow(dead_code)]
 fn check_raw_ip_url(flat: &Flat, out: &mut Vec<Finding>) {
     for scheme in ["http://", "https://"] {
         for at in flat.find_all(scheme) {

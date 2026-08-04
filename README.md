@@ -95,8 +95,9 @@ looked and put their name on it.**
 | `solana.approval_bypass` | Critical | Moving value without operator confirmation |
 | `solana.blind_signing` | High | Signing a transaction the agent has not decoded |
 | `solana.account_closure` | High | Closing an account and sweeping lamports elsewhere |
+| `input.too_large` | High | Input above the scan ceiling — refused, never assumed clean |
 
-The last five are Solana-native. They exist because the brief is right that
+Five of these are Solana-native. They exist because the brief is right that
 *"an agent with key access and an LLM in the loop is a hot wallet with a
 prompt-injection surface"* — and a skill that talks an agent into delegating
 tokens attacks the custody ladder itself, not just the wallet.
@@ -217,7 +218,7 @@ INQUISITOR_KEYPAIR=.issuer.json inquisitor-publish setup
 INQUISITOR_KEYPAIR=.issuer.json inquisitor-publish publish path/to/SKILL.md
 
 # where would a verdict live? (offline, no network)
-inquisitor-publish address path/to/SKILL.md
+cargo run -q --release --manifest-path publisher/Cargo.toml -- address path/to/SKILL.md
 ```
 
 `INQUISITOR_RPC` selects the network and defaults to devnet, so experimenting

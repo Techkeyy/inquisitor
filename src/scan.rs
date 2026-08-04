@@ -93,8 +93,39 @@ fn clean_scalar(raw: &str) -> String {
 }
 
 /// Scan a skill and return its verdict.
+/// Largest input scanned in full.
+///
+/// Real skills are kilobytes. This ceiling exists for two reasons found by
+/// stress testing: a 10 MB input takes seconds to scan, which inside the wasm
+/// component risks exhausting the fuel budget and **trapping** — the call fails
+/// instead of returning a verdict, and a gate that errors is a gate that gets
+/// bypassed. And an instruction file that size is not a normal skill in the
+/// first place.
+pub const MAX_SCAN_BYTES: usize = 1024 * 1024;
+
 pub fn scan_skill(content: &str) -> Verdict {
     let hash = skill_hash(content);
+
+    // Refuse rather than grind, and refuse *loudly*. Returning `Clean` for
+    // anything unscanned would make oversizing the input a way to switch the
+    // gate off.
+    if content.len() > MAX_SCAN_BYTES {
+        return Verdict::new(
+            hash,
+            vec![crate::verdict::Finding {
+                rule_id: "input.too_large",
+                severity: crate::verdict::Severity::High,
+                line: 1,
+                excerpt: format!(
+                    "{} bytes exceeds the {} byte scan limit",
+                    content.len(),
+                    MAX_SCAN_BYTES
+                ),
+                explanation: "Too large to scan; an instruction file this size is not normal.",
+            }],
+        );
+    }
+
     let declared = declared_permissions(content);
     let findings = rules::scan(&canonicalize(content), &declared);
     Verdict::new(hash, findings)

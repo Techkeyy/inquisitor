@@ -12,7 +12,7 @@ Honest status, including what is **not** done.
 | Showcase post in `#solana-bounty` | **Operator action.** Text ready in `SHOWCASE.md`. |
 | Video, ≤3 minutes, real agent, no slides | **Operator action.** Shot list below. |
 | Write-up covering the required points | **Done** — `SHOWCASE.md`. |
-| Supporting material for quality/reliability | **Done** — `evidence/`, 66 tests, real-registry scan. |
+| Supporting material for quality/reliability | **Done** — `evidence/`, 83 tests, real-registry scan. |
 | Secrets redacted | **Done.** No credential pattern in any tracked file; issuer keypair gitignored; all config values are public addresses. |
 | No registry PR opened during the bounty | **Correct** — none opened. |
 
@@ -49,9 +49,9 @@ rather than promised:
 
 | "We will not accept…" | Why this is not that |
 |---|---|
-| Concepts, mockups, slideware | It runs. Mainnet attestations, agent transcripts, 66 tests. |
+| Concepts, mockups, slideware | It runs. Mainnet attestations, agent transcripts, 83 tests. |
 | A plugin with no use case | The use case is the submission; the plugin is one part of it. |
-| Thin single-RPC wrappers padded into WASM | The scanner is ~2,300 lines of real logic with 66 tests. The RPC call is one line of a much larger thing, and the tool works with no network at all. |
+| Thin single-RPC wrappers padded into WASM | The scanner is ~2,300 lines of real logic with 83 tests. The RPC call is one line of a much larger thing, and the tool works with no network at all. |
 | Raw private key, no caps/allowlist/approval | The agent holds no key. |
 | Trading / sniper / "buy this token" agents | Not applicable — this is defensive tooling. |
 
@@ -61,7 +61,7 @@ rather than promised:
 |---|---|---|
 | The use case | 30% | Real need, evidenced by an actual registry compromise. Runs daily via cron SOP. **Weakest point: days of history, not months.** |
 | Safety & custody | 25% | Tier honest and structural. Fails closed. Injection transcript included. Third-party trust limited to RPC + SAS. |
-| Craft | 20% | Pure core + thin glue, 66 tests, zero `unsafe`, no panics in library code, clippy and rustfmt clean, minimal declared permissions, correct Tier-1/Tier-3 layering. |
+| Craft | 20% | Pure core + thin glue, 83 tests, zero `unsafe`, no panics in library code, clippy and rustfmt clean, minimal declared permissions, correct Tier-1/Tier-3 layering. |
 | Reproducibility | 15% | One-command build, documented config, works with no network, `--json` for automation. |
 | Showcase | 10% | Write-up done; **video is an operator action.** |
 | Tiebreak: build-in-public | — | **Not done.** No X posts during the bounty. |
@@ -81,12 +81,12 @@ rather than promised:
 ## Verification anyone can run
 
 ```bash
-cargo test                                          # 66 tests
+cargo test                                          # 83 tests
 cargo clippy --all-targets                          # clean
 cargo fmt --check                                   # clean
 cargo build --release --target wasm32-wasip2        # component
 cargo run --example scan -- tests/fixtures/poisoned-solana-helper.md   # exit 1
-inquisitor-publish address <skill>                  # derive an address offline
+INQUISITOR_CREDENTIAL=<pubkey> cargo run -q --release \n  --manifest-path publisher/Cargo.toml -- address <skill>   # keyless, offline
 ```
 
 ## Not done — stated plainly
