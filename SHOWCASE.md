@@ -193,6 +193,7 @@ a claim, not proof.
 | `http_client` → `wasi:http` | One `getAccountInfo` per lookup |
 | `logging` import | Structured events into the host's observability stack |
 | Skills (`agentskills.io` format) | Teaches the agent *when* to call the gate |
+| Telegram channel + peer allowlist | The gate runs from a phone, not just a terminal |
 | Cron SOP | Daily audit of every installed skill |
 | Risk profiles / `auto_approve` | Scopes the read-only scanner without weakening `supervised` |
 

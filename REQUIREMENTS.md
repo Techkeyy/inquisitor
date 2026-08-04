@@ -7,7 +7,7 @@ Honest status, including what is **not** done.
 
 | Requirement | Status |
 |---|---|
-| A working use case — real agent, real channel, real job involving Solana | **Done.** Agent runs on the `cli` channel, reads verdicts from Solana mainnet. Transcripts in `evidence/`. |
+| A working use case — real agent, real channel, real job involving Solana | **Done.** Agent runs on Telegram and `cli`, reads verdicts from Solana mainnet. Transcripts in `evidence/`. |
 | Link to GitHub repo | **Done** — repo is the submission. |
 | Showcase post in `#solana-bounty` | **Operator action.** Text ready in `SHOWCASE.md`. |
 | Video, ≤3 minutes, real agent, no slides | **Operator action.** Shot list below. |
@@ -94,12 +94,9 @@ inquisitor-publish address <skill>                  # derive an address offline
 1. **Video not shot.** Operator action.
 2. **Not posted** to `#solana-bounty`. Operator action.
 3. **No build-in-public posts.** This is the stated tiebreak and it is forgone.
-4. **Only the `cli` channel.** The brief's exemplar uses WhatsApp. For a tool
-   operators use while installing skills, the terminal is arguably the honest
-   home, but a messaging channel would demo more vividly and is not wired up.
-5. **Days of usage history, not months.** No amount of building fixes this —
+4. **Days of usage history, not months.** No amount of building fixes this —
    only calendar time. The cron SOP accrues real logs daily from now.
-6. **No issuer reputation weighting or multi-issuer consensus.** Today a reader
+5. **No issuer reputation weighting or multi-issuer consensus.** Today a reader
    trusts one pubkey or does not.
 
 ## Video shot list — 3 minutes
