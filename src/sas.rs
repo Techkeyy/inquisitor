@@ -13,7 +13,7 @@
 //! Seeds verified against the program source, not documentation:
 //! `program/src/processor/{create_credential,create_schema,create_attestation}.rs`.
 
-use solana_pubkey::Pubkey;
+pub use solana_pubkey::Pubkey;
 
 /// SAS program, identical on mainnet and devnet.
 pub const SAS_PROGRAM_ID: Pubkey =

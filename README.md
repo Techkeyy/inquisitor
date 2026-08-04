@@ -249,8 +249,13 @@ The address is a pure function of the skill bytes, so anyone can check a claim
 without trusting the claimant:
 
 ```bash
-inquisitor-publish address suspicious-skill.md   # prints the attestation address
+export INQUISITOR_CREDENTIAL=FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9
+cargo run -q --release --manifest-path publisher/Cargo.toml --   address suspicious-skill.md
 ```
+
+No keypair and no network: the address is a pure function of the file's bytes
+and the registry you are checking. Verifying someone else's verdict must not
+require holding their identity, or "check it yourself" is not a real offer.
 
 Then read that account on any explorer or RPC. If the file was edited by one
 byte, the hash changes, the address changes, and the old verdict no longer

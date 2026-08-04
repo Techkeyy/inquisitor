@@ -297,13 +297,31 @@ fn revoke(rpc_url: &str, path: &str) -> Result<()> {
     Ok(())
 }
 
+/// Print where a verdict for this file would live.
+///
+/// **Requires no key and no network.** That is the point: verifying someone
+/// else's verdict must not depend on holding their identity, or "check it
+/// yourself" is not a real offer. Pass `INQUISITOR_CREDENTIAL` to check another
+/// issuer's registry; only an issuer publishing their own verdicts needs a
+/// keypair here.
 fn address(path: &str) -> Result<()> {
     let content = std::fs::read_to_string(path).with_context(|| format!("cannot read {path}"))?;
     let verdict = scan::scan_skill(&content);
-    let issuer = issuer()?;
 
-    let (credential, _) =
-        sas::derive_credential(&to_inq(&issuer.pubkey()), CREDENTIAL_NAME.as_bytes());
+    let credential = match std::env::var("INQUISITOR_CREDENTIAL") {
+        Ok(v) if !v.trim().is_empty() => v
+            .trim()
+            .parse::<inquisitor::sas::Pubkey>()
+            .map_err(|e| anyhow::anyhow!("INQUISITOR_CREDENTIAL is not a valid pubkey: {e}"))?,
+        _ => {
+            let issuer = issuer().context(
+                "no INQUISITOR_CREDENTIAL set and no issuer keypair found — set \
+                 INQUISITOR_CREDENTIAL to the registry you want to check",
+            )?;
+            sas::derive_credential(&to_inq(&issuer.pubkey()), CREDENTIAL_NAME.as_bytes()).0
+        }
+    };
+
     let (schema, _) = sas::derive_schema(&credential, SCHEMA_NAME, SCHEMA_VERSION);
     let nonce = sas::hash_to_nonce(&verdict.skill_hash).context("malformed hash")?;
     let (attestation, _) = sas::derive_attestation(&credential, &schema, &nonce);
