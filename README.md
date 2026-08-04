@@ -42,7 +42,7 @@ taken on trust — derive the address from a skill file and read it yourself.
 | Credential | `FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9` |
 | Schema | `59JVQvrG5FbB1Eg73Q9xAsLm8S5vc84yG4hMvoALr2GE` |
 
-20 verdicts are published — every skill in the public `zeroclaw-skills`
+22 verdicts are published — every skill in the public `zeroclaw-skills`
 registry, plus both test fixtures. Two worth looking at:
 
 | Skill | Verdict | Attestation |
@@ -222,6 +222,12 @@ inquisitor-publish address path/to/SKILL.md
 
 `INQUISITOR_RPC` selects the network and defaults to devnet, so experimenting
 costs nothing.
+
+> **Publish through `cargo run`, not a previously built binary.** The publisher
+> links the scanner as a path dependency, so a stale executable attests with
+> stale rules. This wrote two wrong verdicts to mainnet before it was caught —
+> once marking a clean skill suspicious, once marking a **malicious skill
+> clean**. Cargo rebuilds on the way through; a bare `.exe` does not.
 
 ### Withdrawing a verdict
 

@@ -94,7 +94,7 @@ judging is not a durable public record.
 | Credential | `FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9` |
 | Schema | `59JVQvrG5FbB1Eg73Q9xAsLm8S5vc84yG4hMvoALr2GE` |
 
-**20 verdicts published**: every one of the 18 published `zeroclaw-skills`, plus
+**22 verdicts published**: every one of the 18 published `zeroclaw-skills`, plus
 both test fixtures. Rent is ~0.0017 SOL each.
 
 | Skill | Verdict | Attestation |
@@ -236,8 +236,8 @@ is written almost entirely in that shape.
 
 **Built:** the scanner (16 rules, hand-rolled matchers — a security tool should
 not carry a backtracking regex engine), the flattening/segmentation layer, SAS
-address derivation, the on-chain read path, and the publisher CLI. ~1,400 lines
-of Rust, 59 tests.
+address derivation, the on-chain read path, and the publisher CLI. ~2,300 lines
+of Rust, 66 tests.
 
 **Composed:** ZeroClaw's plugin host, SAS, and the Codama-generated client.
 
@@ -309,8 +309,25 @@ So `revoke` exists: close the account, republish from a build you trust. The
 correction is
 [`277ZxyFezTF1n7R2nZ2XoHKvEMpciSjfXxBwY5BRJvRXGf8Nbz1YBg4YZN2zGtX5YhjYasrdF7h2oAxGooCyJ6fn`](https://solscan.io/tx/277ZxyFezTF1n7R2nZ2XoHKvEMpciSjfXxBwY5BRJvRXGf8Nbz1YBg4YZN2zGtX5YhjYasrdF7h2oAxGooCyJ6fn).
 
-A registry with no retraction path is one where the first mistake is permanent.
-Nobody should trust an issuer who cannot take something back.
+It happened a second time, and worse. Publishing the on-chain fixture wrote
+`CLEAN 0/100` for a skill the scanner rates `MALICIOUS 100/100` — a malicious
+file marked safe, which is the failure direction that actually costs someone
+their wallet. Same root cause: the publisher links the scanner as a path
+dependency, and the binary was invoked directly rather than through `cargo run`,
+so it carried rules from before the Solana family existed.
+
+Both were caught by an audit pass, both were revoked and republished:
+[first](https://solscan.io/tx/277ZxyFezTF1n7R2nZ2XoHKvEMpciSjfXxBwY5BRJvRXGf8Nbz1YBg4YZN2zGtX5YhjYasrdF7h2oAxGooCyJ6fn),
+[second](https://solscan.io/tx/57TWmi1dMRW4kAikREQDa4WDnmv2Wc8rSMBUCH7JF5vANnYPCnSSo33KHxPTqyR7eAvaq6jWA4TzSD1YaZpDzWeE).
+
+The lesson is not "be careful" — it is that **an issuer is a piece of software
+that will be wrong**, so the retraction path is not a nicety, it is load-bearing
+infrastructure. A registry without one is a registry where the first mistake is
+permanent, and nobody should trust an issuer who cannot take something back.
+
+Operationally: always publish via `cargo run --release`, never a previously
+built binary. That is now in the README, in the words of someone who did it
+twice.
 
 ## Reproduce it
 
