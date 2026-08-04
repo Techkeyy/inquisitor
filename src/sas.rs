@@ -186,8 +186,16 @@ pub fn signer_from_account(account: &[u8]) -> Option<Pubkey> {
     Some(Pubkey::new_from_array(raw))
 }
 
+/// Append a borsh-style string: u32 little-endian length, then bytes.
+///
+/// The length is written with a saturating conversion rather than a cast. A
+/// string longer than `u32::MAX` cannot occur here — payloads are capped far
+/// below that — but a silent wrap would produce an account that decodes to
+/// something other than what was scanned, and a verdict that does not describe
+/// the bytes it claims to is worse than no verdict.
 fn push_str(out: &mut Vec<u8>, s: &str) {
-    out.extend_from_slice(&(s.len() as u32).to_le_bytes());
+    let len = u32::try_from(s.len()).unwrap_or(u32::MAX);
+    out.extend_from_slice(&len.to_le_bytes());
     out.extend_from_slice(s.as_bytes());
 }
 

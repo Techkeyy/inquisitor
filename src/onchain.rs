@@ -94,19 +94,23 @@ pub fn base64_decode(input: &str) -> Option<Vec<u8>> {
         if c == b'=' || c == b'\n' || c == b'\r' {
             continue;
         }
-        let v = match c {
+        let v = u32::from(match c {
             b'A'..=b'Z' => c - b'A',
             b'a'..=b'z' => c - b'a' + 26,
             b'0'..=b'9' => c - b'0' + 52,
             b'+' => 62,
             b'/' => 63,
             _ => return None,
-        } as u32;
+        });
         acc = (acc << 6) | v;
         bits += 6;
         if bits >= 8 {
             bits -= 8;
-            out.push((acc >> bits) as u8);
+            // Masked to the low byte explicitly. `bits < 8` here so the shift
+            // already leaves at most 8 significant bits, but this is a decoder
+            // fed by a remote endpoint — the invariant should be visible in the
+            // code rather than reconstructed by a reader.
+            out.push(u8::try_from((acc >> bits) & 0xFF).unwrap_or(0));
         }
     }
     Some(out)

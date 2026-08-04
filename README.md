@@ -145,10 +145,29 @@ cargo build --release --target wasm32-wasip2
 ```
 
 ```bash
-zeroclaw plugin install ./inquisitor/
+zeroclaw plugin install ./dist/inquisitor/
 zeroclaw config set plugins.enabled true
 zeroclaw plugin list
 ```
+
+### Install the skill too — this part is not optional
+
+The plugin is the gate; the **skill is what makes the agent walk through it**.
+Without the skill the tool only fires when you explicitly ask for it, which
+misses the entire point.
+
+```bash
+zeroclaw skills bundle add security
+zeroclaw skills install ./skills/inquisitor --bundle security
+zeroclaw config set agents.<your-agent>.skill_bundles '["security"]'
+```
+
+Installing a skill globally does **not** load it — no agent reads the global
+directory. It must be in a bundle the agent lists, or nothing happens and
+nothing tells you why.
+
+With it bound, the behaviour is the one that matters: paste a skill and say you
+are about to install it, and the agent vets it without being asked.
 
 ### Config
 
@@ -188,6 +207,20 @@ inquisitor-publish address path/to/SKILL.md
 
 `INQUISITOR_RPC` selects the network and defaults to devnet, so experimenting
 costs nothing.
+
+### Withdrawing a verdict
+
+Issuers get things wrong. This tool published a false positive to mainnet from a
+stale build within an hour of going live. Attestations are immutable, so the
+honest correction is to close the account and publish again:
+
+```bash
+INQUISITOR_KEYPAIR=.issuer.json inquisitor-publish revoke path/to/SKILL.md
+```
+
+Closing refunds the rent. A registry with no retraction path is one where the
+first mistake is permanent, and nobody should trust an issuer who cannot take
+something back.
 
 ### Verifying someone else's verdict
 
