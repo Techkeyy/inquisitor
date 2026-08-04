@@ -203,7 +203,38 @@ returns a verdict, and the skill tells the agent what to do with it.
 
 ## What I built vs composed
 
-**Built:** the scanner (11 rules, hand-rolled matchers — a security tool should
+### Solana-native rules
+
+Five of the sixteen rules encode Solana domain knowledge rather than generic
+secret-hunting, because the brief is right that *"an agent with key access and
+an LLM in the loop is a hot wallet with a prompt-injection surface"*:
+
+| Rule | Fires on |
+|---|---|
+| `solana.authority_handover` | Handing over mint, freeze, or upgrade authority |
+| `solana.token_delegation` | Granting standing permission to move tokens |
+| `solana.approval_bypass` | Moving value without operator confirmation |
+| `solana.blind_signing` | Signing a transaction the agent has not decoded |
+| `solana.account_closure` | Closing an account, sweeping lamports elsewhere |
+
+A skill that talks an agent into delegating tokens attacks the custody ladder
+itself, not just the wallet — every T2 design in the brief rests on an approval
+gate.
+
+The difficulty is that **every real SPL skill discusses `setAuthority` and
+`approve`** — that is what the token program does. So these fire only when the
+operation carries a second signal that it is an instruction aimed at the
+operator's assets: a hardcoded destination address, or a phrase removing the
+human from the decision. Documentation has neither.
+
+It was tested the only way that means anything — against a fixture written to
+break it. `clean-spl-authority-guide.md` names every dangerous operation while
+instructing none of them, and the first version flagged it `MALICIOUS` for the
+sentence *"Do not close a token account without confirmation"* — advice to
+**require** a human, read as an instruction to skip one. Security documentation
+is written almost entirely in that shape.
+
+**Built:** the scanner (16 rules, hand-rolled matchers — a security tool should
 not carry a backtracking regex engine), the flattening/segmentation layer, SAS
 address derivation, the on-chain read path, and the publisher CLI. ~1,400 lines
 of Rust, 59 tests.
@@ -266,8 +297,7 @@ Every fix makes the rules *stricter*, not quieter. Negations must precede a
 match within 40 characters, so a reassuring sentence at the top of a file cannot
 launder an instruction below it.
 
-**Result: 18/18 clean, poisoned fixture still MALICIOUS 100 with all five
-findings.** All three are locked in by tests using the real files verbatim.
+**Result: 18/18 clean, both poisoned fixtures still MALICIOUS 100.** All three are locked in by tests using the real files verbatim.
 
 ## And one it found in itself
 

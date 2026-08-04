@@ -90,6 +90,21 @@ looked and put their name on it.**
 | `egress.raw_ip` | Medium | A bare IP where a hostname belongs |
 | `obfuscation.encoded_blob` | Medium | Long encoded runs in prose |
 | `mismatch.undeclared_capability` | Medium | Declares no permissions, instructs privileged work |
+| `solana.authority_handover` | Critical | Handing over mint, freeze, or upgrade authority |
+| `solana.token_delegation` | Critical | Granting another address standing permission to move tokens |
+| `solana.approval_bypass` | Critical | Moving value without operator confirmation |
+| `solana.blind_signing` | High | Signing a transaction the agent has not decoded |
+| `solana.account_closure` | High | Closing an account and sweeping lamports elsewhere |
+
+The last five are Solana-native. They exist because the brief is right that
+*"an agent with key access and an LLM in the loop is a hot wallet with a
+prompt-injection surface"* — and a skill that talks an agent into delegating
+tokens attacks the custody ladder itself, not just the wallet.
+
+They fire only on *instructions*, never on documentation. Every real SPL skill
+discusses `setAuthority` and `approve`; a dangerous operation counts only when
+it comes with a hardcoded destination address or a phrase removing the human
+from the decision. Documentation has neither.
 
 Score is the sum of severity weights, saturating at 100.
 `0` clean · `1–14` caution · `15–79` suspicious · `80+` malicious.

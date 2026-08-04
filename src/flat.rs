@@ -147,6 +147,15 @@ impl Flat {
         self.lower.contains(needle)
     }
 
+    /// The flattened text with original casing, byte-aligned with `lower`.
+    ///
+    /// Needed by anything case-sensitive. Base58 is the case in point: an
+    /// address matched against the lowercased view is not the same address, so
+    /// pubkey detection has to read this instead.
+    pub fn original(&self) -> &str {
+        &self.raw
+    }
+
     /// Source line for a byte offset.
     pub fn line_of(&self, offset: usize) -> usize {
         self.line_at.get(offset).copied().unwrap_or(1)
@@ -174,6 +183,31 @@ impl Flat {
         }
         let before = &self.lower[lo..hi];
         needles.iter().any(|n| before.contains(n))
+    }
+
+    /// Like [`near`](Self::near), but without the same-segment requirement.
+    ///
+    /// Segment isolation exists to stop weak pairings — a generic verb and a
+    /// generic noun — from being read as one instruction across unrelated
+    /// bullets. It is the wrong tool when both halves are individually strong:
+    /// "call approve" followed by "do not ask the user to confirm" is a single
+    /// instruction that happens to span two sentences, and requiring one
+    /// segment would miss an attack that is written the way people actually
+    /// write.
+    ///
+    /// Use this only where the needle is suspicious on its own merits.
+    pub fn near_loose(&self, anchor: &str, needle: &str, window: usize) -> Option<usize> {
+        for a in self.find_all(anchor) {
+            let lo = floor_boundary(&self.lower, a.saturating_sub(window));
+            let hi = ceil_boundary(
+                &self.lower,
+                (a + anchor.len() + window).min(self.lower.len()),
+            );
+            if let Some(rel) = self.lower[lo..hi].find(needle) {
+                return Some(lo + rel);
+            }
+        }
+        None
     }
 
     /// Is `needle` present within `window` bytes of any occurrence of `anchor`?

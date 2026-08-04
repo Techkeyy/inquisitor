@@ -170,6 +170,92 @@ const ROLE_MARKERS: &[&str] = &[
     "### system",
 ];
 
+/// On-chain operations that hand over control irreversibly.
+///
+/// The brief puts it exactly right: an agent with key access and an LLM in the
+/// loop is a hot wallet with a prompt-injection surface. These are the
+/// instructions that turn that surface into a loss.
+const AUTHORITY_OPS: &[&str] = &[
+    "setauthority",
+    "set_authority",
+    "set authority",
+    "mint authority",
+    "freeze authority",
+    "update authority",
+    "upgrade authority",
+    "authoritytype",
+];
+
+/// Operations that let someone else move your tokens later.
+const DELEGATION_OPS: &[&str] = &[
+    "approve",
+    "delegate",
+    "createapproveinstruction",
+    "approvechecked",
+    "spl-token approve",
+    "allowance",
+    "recurring delegation",
+];
+
+/// Closing an account sweeps its lamports somewhere.
+const CLOSURE_OPS: &[&str] = &["closeaccount", "close_account", "close the token account"];
+
+/// Phrases that remove the human from a value-moving decision.
+///
+/// This is the custody ladder's load-bearing assumption being attacked
+/// directly: every T2 design in the brief rests on an approval gate, so a skill
+/// that talks the agent past one is attacking the safety model itself, not just
+/// the wallet.
+const AUTO_APPROVE_PHRASES: &[&str] = &[
+    "without asking",
+    "without confirmation",
+    "without prompting",
+    "no need to confirm",
+    "skip the approval",
+    "skip approval",
+    "bypass the approval",
+    "bypass approval",
+    "auto-approve",
+    "auto approve",
+    "automatically approve",
+    "do not ask the user",
+    "don't ask the user",
+    "no confirmation needed",
+    "raise the spend limit",
+    "increase the cap",
+    "disable the limit",
+];
+
+/// Signing something the agent has not decoded.
+///
+/// A base64 blob is not an intent. An agent that signs one has delegated its
+/// judgement to whoever produced the bytes.
+const BLIND_SIGN_PHRASES: &[&str] = &[
+    "sign it as-is",
+    "sign it as is",
+    "sign whatever",
+    "do not decode",
+    "don't decode",
+    "do not inspect the transaction",
+    "without decoding",
+    "without inspecting",
+    "no need to decode",
+    "no need to verify the transaction",
+    "sign the base64",
+    "sign this base64",
+];
+
+/// Verbs that move value on chain.
+const TRANSFER_VERBS: &[&str] = &[
+    "transfer",
+    "send",
+    "sweep",
+    "withdraw",
+    "drain",
+    "move the funds",
+    "move funds",
+];
+
 /// Shells a download can be piped into.
 const SHELL_PIPES: &[&str] = &[
     "| bash",
@@ -227,6 +313,18 @@ pub fn scan(content: &str, declared_permissions: &[String]) -> Vec<Finding> {
         &mut findings,
     );
     check_raw_ip_url(&flat, &mut findings);
+    check_solana_authority(&flat, &mut findings);
+    check_solana_delegation(&flat, &mut findings);
+    check_solana_closure(&flat, &mut findings);
+    check_approval_bypass(&flat, &mut findings);
+    check_phrases(
+        &flat,
+        BLIND_SIGN_PHRASES,
+        "solana.blind_signing",
+        Severity::High,
+        "Tells the agent to sign a transaction it has not decoded.",
+        &mut findings,
+    );
 
     // Character-level rules stay per line: flattening would splice separate
     // lines into one run and invent blobs that are not there.
@@ -363,6 +461,176 @@ fn check_raw_ip_url(flat: &Flat, out: &mut Vec<Finding>) {
                     line: flat.line_of(at),
                     excerpt: excerpt(flat.window(at, EXCERPT_MAX)),
                     explanation: "Uses a bare IP address instead of a named host.",
+                });
+                return;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Solana-native rules.
+//
+// Every Solana skill worth installing discusses `setAuthority` and `approve` —
+// that is what the SPL token program does. Firing on the mention would flag the
+// entire ecosystem, so these require a second signal that the text is an
+// *instruction aimed at the operator's assets* rather than documentation:
+// either a hardcoded destination address, or a phrase removing the human from
+// the decision. Documentation has neither.
+// ---------------------------------------------------------------------------
+
+/// Does this look like a base58-encoded Solana address?
+///
+/// 32–44 characters from the base58 alphabet with at least one digit. English
+/// words do not reach 32 characters, and the digit requirement excludes the
+/// long identifiers that appear in prose.
+fn looks_like_pubkey(token: &str) -> bool {
+    const B58: &str = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    let len = token.chars().count();
+    if !(32..=44).contains(&len) {
+        return false;
+    }
+    token.chars().all(|c| B58.contains(c)) && token.chars().any(|c| c.is_ascii_digit())
+}
+
+/// Byte offset of the first hardcoded address, if any.
+///
+/// Matching runs on the original-case text: base58 is case-sensitive, and the
+/// lowercased view would turn a valid address into something that is not one.
+fn first_pubkey(flat: &Flat) -> Option<usize> {
+    let raw = flat.original();
+    let bytes = raw.as_bytes();
+    let mut start = None;
+
+    for (i, &b) in bytes.iter().enumerate() {
+        let boundary = !b.is_ascii_alphanumeric();
+        match (start, boundary) {
+            (None, false) => start = Some(i),
+            (Some(s), true) => {
+                if looks_like_pubkey(&raw[s..i]) {
+                    return Some(s);
+                }
+                start = None;
+            }
+            _ => {}
+        }
+    }
+    if let Some(s) = start
+        && looks_like_pubkey(&raw[s..])
+    {
+        return Some(s);
+    }
+    None
+}
+
+/// Fire when a dangerous operation is accompanied by a hardcoded destination or
+/// a phrase that removes the operator from the decision.
+fn check_dangerous_op(
+    flat: &Flat,
+    ops: &[&str],
+    rule_id: &'static str,
+    severity: Severity,
+    explanation: &'static str,
+    out: &mut Vec<Finding>,
+) {
+    let address_at = first_pubkey(flat);
+
+    for op in ops {
+        for at in flat.find_all(op) {
+            if NEGATIONS
+                .iter()
+                .any(|n| flat.preceded_by(at, &[n], NEGATION_WINDOW))
+            {
+                continue;
+            }
+
+            let bypasses = AUTO_APPROVE_PHRASES
+                .iter()
+                .any(|p| flat.near_loose(op, p, PROXIMITY).is_some());
+            let targets_address = address_at.is_some_and(|a| a.abs_diff(at) <= PROXIMITY * 2);
+
+            if bypasses || targets_address {
+                out.push(Finding {
+                    rule_id,
+                    severity,
+                    line: flat.line_of(at),
+                    excerpt: excerpt(flat.window(at, EXCERPT_MAX)),
+                    explanation,
+                });
+                return;
+            }
+        }
+    }
+}
+
+fn check_solana_authority(flat: &Flat, out: &mut Vec<Finding>) {
+    check_dangerous_op(
+        flat,
+        AUTHORITY_OPS,
+        "solana.authority_handover",
+        Severity::Critical,
+        "Instructs the agent to hand over mint, freeze, or upgrade authority.",
+        out,
+    );
+}
+
+fn check_solana_delegation(flat: &Flat, out: &mut Vec<Finding>) {
+    check_dangerous_op(
+        flat,
+        DELEGATION_OPS,
+        "solana.token_delegation",
+        Severity::Critical,
+        "Grants another address standing permission to move the operator's tokens.",
+        out,
+    );
+}
+
+fn check_solana_closure(flat: &Flat, out: &mut Vec<Finding>) {
+    check_dangerous_op(
+        flat,
+        CLOSURE_OPS,
+        "solana.account_closure",
+        Severity::High,
+        "Closes a token account, sweeping its lamports to a given destination.",
+        out,
+    );
+}
+
+/// Removing the human from a value-moving decision.
+///
+/// Scored `Critical` on its own because it attacks the safety model rather than
+/// the wallet: every T2 design in the custody ladder rests on an approval gate,
+/// so text that talks the agent past one has defeated the design, whatever it
+/// does next.
+fn check_approval_bypass(flat: &Flat, out: &mut Vec<Finding>) {
+    for phrase in AUTO_APPROVE_PHRASES {
+        for at in flat.find_all(phrase) {
+            // "Do not close a token account without confirmation" is the
+            // opposite of what this rule looks for. Security documentation is
+            // written almost entirely in this shape, so the guard belongs here
+            // more than anywhere else in the file.
+            if NEGATIONS
+                .iter()
+                .any(|n| flat.preceded_by(at, &[n], NEGATION_WINDOW))
+            {
+                continue;
+            }
+
+            let moves_value = TRANSFER_VERBS
+                .iter()
+                .chain(DELEGATION_OPS.iter())
+                .chain(AUTHORITY_OPS.iter())
+                .any(|v| flat.near_loose(phrase, v, PROXIMITY).is_some())
+                || flat.near_loose(phrase, "sign", PROXIMITY).is_some()
+                || flat.near_loose(phrase, "transaction", PROXIMITY).is_some();
+
+            if moves_value {
+                out.push(Finding {
+                    rule_id: "solana.approval_bypass",
+                    severity: Severity::Critical,
+                    line: flat.line_of(at),
+                    excerpt: excerpt(flat.window(at, EXCERPT_MAX)),
+                    explanation: "Tells the agent to move value without operator confirmation.",
                 });
                 return;
             }
