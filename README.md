@@ -204,6 +204,16 @@ Leave these unset and Inquisitor scans locally only — the registry is an
 enhancement, never a dependency. An unreachable RPC falls back to scanning; it
 can never be mistaken for "no findings".
 
+## Running it 24/7
+
+A laptop is not a deployment. [`DEPLOY.md`](DEPLOY.md) puts the agent on a small
+server for €4–7/month.
+
+The split matters: the **agent** runs on the server and holds no key (T0), while
+**publishing** stays on a machine you control (T1). The issuer keypair never
+travels to a rented box, and the server needs no inbound ports at all — Telegram
+is polled, Solana is polled, nothing dials in.
+
 ## Publishing your own verdicts
 
 Publishing is an **operator** action in a separate binary. The agent reads; it
