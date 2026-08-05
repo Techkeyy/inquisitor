@@ -22,3 +22,8 @@ credentials.json
 dist/
 POSTS.md
 VIDEO.md
+
+# API keys — never commit
+DEEPSEEK_API_KEY.txt
+DEEPSEEK_API_KEY
+*API_KEY*
