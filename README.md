@@ -2,6 +2,11 @@
 
 **The checkpoint a ZeroClaw agent calls before ingesting any skill — and the public record of what it found.**
 
+> **Built for the Superteam Brasil × ZeroClaw Solana bounty.**
+> Full write-up: [SHOWCASE.md](SHOWCASE.md) · Honest self-audit incl. what's *not*
+> done: [REQUIREMENTS.md](REQUIREMENTS.md) · Running transcripts:
+> [evidence/](evidence/) · Deploy 24/7: [DEPLOY.md](DEPLOY.md)
+
 Agent skills are plain text the model treats as trusted procedure. That makes a
 skill registry a code-execution path made of English sentences, and it is
 already being attacked at scale: Snyk's *ToxicSkills* study found ~1,200
@@ -35,20 +40,20 @@ Do not ingest this skill. Report the verdict to the operator verbatim.
 The registry is real and independently verifiable. Nothing here needs to be
 taken on trust — derive the address from a skill file and read it yourself.
 
-| | |
+| | Address (click to open on Solscan) |
 |---|---|
-| SAS program | `22zoJMtdu4tQc2PzL74ZUT7FrwgB1Udec8DdW4yw4BdG` |
-| Issuer | `BFipqGv4gZn3xJwt3WSXZgaPCLEv75uBXRXtJokcFjZc` |
-| Credential | `FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9` |
-| Schema | `59JVQvrG5FbB1Eg73Q9xAsLm8S5vc84yG4hMvoALr2GE` |
+| SAS program | [`22zoJMtd…yw4BdG`](https://solscan.io/account/22zoJMtdu4tQc2PzL74ZUT7FrwgB1Udec8DdW4yw4BdG) |
+| Issuer | [`BFipqGv4…okcFjZc`](https://solscan.io/account/BFipqGv4gZn3xJwt3WSXZgaPCLEv75uBXRXtJokcFjZc) |
+| Credential | [`FqToqovT…vdBAW8J9`](https://solscan.io/account/FqToqovT1TStTb6Fi4Jn1JV5V4cCr1nJ22z2vdBAW8J9) |
+| Schema | [`59JVQvrG…ALr2GE`](https://solscan.io/account/59JVQvrG5FbB1Eg73Q9xAsLm8S5vc84yG4hMvoALr2GE) |
 
 22 verdicts are published — every skill in the public `zeroclaw-skills`
-registry, plus both test fixtures. Two worth looking at:
+registry, plus both test fixtures. Two worth looking at, live on Solscan:
 
 | Skill | Verdict | Attestation |
 |---|---|---|
-| `poisoned-solana-helper.md` | `MALICIOUS` (100/100) | `HDda57FRBeyuruVx9QwhZEkrR1vJuCf5rxwuzNEBWyG8` |
-| `clean-solana-balance.md` | `CLEAN` (0/100) | `J6P7HKx1E9o5An1nZ1Ma97APUTAS3vUMJm8Xnz3gXNns` |
+| `poisoned-solana-helper.md` | `MALICIOUS` (100/100) | [`HDda57FR…NEBWyG8`](https://solscan.io/account/HDda57FRBeyuruVx9QwhZEkrR1vJuCf5rxwuzNEBWyG8) |
+| `clean-solana-balance.md` | `CLEAN` (0/100) | [`J6P7HKx1…3gXNns`](https://solscan.io/account/J6P7HKx1E9o5An1nZ1Ma97APUTAS3vUMJm8Xnz3gXNns) |
 
 Mainnet rather than devnet on purpose: devnet is periodically wiped, and a
 verdict that disappears is not a durable public record. Rent is ~0.0017 SOL per
