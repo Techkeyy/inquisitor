@@ -2,6 +2,8 @@
 
 **The checkpoint a ZeroClaw agent calls before ingesting any skill — and the public record of what it found.**
 
+> **▶ Demo video (3 min): https://youtu.be/qOfNgzTc5Rc**
+>
 > **Built for the Superteam Brasil × ZeroClaw Solana bounty.**
 > Full write-up: [SHOWCASE.md](SHOWCASE.md) · Honest self-audit incl. what's *not*
 > done: [REQUIREMENTS.md](REQUIREMENTS.md) · Running transcripts:
